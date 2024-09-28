@@ -37,5 +37,8 @@ class LoginView(generics.GenericAPIView):
         except User.DoesNotExist:
             return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
         
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.filter(isadmin=False)  # Filter out admin users
+    serializer_class = UserSerializer

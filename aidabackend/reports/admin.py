@@ -3,5 +3,14 @@ from .models import Report
 
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ('date', 'time', 'incident', 'victim_name', 'age', 'sex', 'address')
-    search_fields = ('victim_name', 'incident')
+    list_display = (
+        'date_time',      # Updated to reflect the DateTimeField
+        'incident_type',  # Updated to reflect the correct field
+        'victim_name',
+        'victim_age',
+        'victim_sex',
+        'landmark',
+        'city',
+    )
+    search_fields = ('victim_name', 'incident_type')  # Updated for search functionality
+

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Report, Alert
+from .models import Report
 
 class ReportSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,8 +20,3 @@ class ReportSerializer(serializers.ModelSerializer):
             'duty',
             'remarks',
         ]
-
-class AlertSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Alert
-        fields = '__all__'

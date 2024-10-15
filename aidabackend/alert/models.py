@@ -1,13 +1,13 @@
-# alert/models.py
-
 from django.db import models
-from django.conf import settings  # Import settings to reference the User model
+from django.utils import timezone
 
 class Alert(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # Link to the User model
-    subject = models.CharField(max_length=100)
+    subject = models.CharField(max_length=255)
     message = models.TextField()
-    date_time = models.DateTimeField(auto_now_add=True)  # Automatically set to now when created
+    image = models.ImageField(upload_to='alerts/', null=True, blank=True)
+    files = models.FileField(upload_to='files/', null=True, blank=True)
+    links = models.JSONField(default=list, blank=True)
+    time = models.DateTimeField(default=timezone.now)  # Set to current time when alert is created
 
     def __str__(self):
-        return f'Alert from {self.user.username}: {self.subject}'
+        return self.subject

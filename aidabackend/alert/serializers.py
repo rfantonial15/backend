@@ -1,10 +1,9 @@
-# alert/serializers.py
-
 from rest_framework import serializers
 from .models import Alert
 
 class AlertSerializer(serializers.ModelSerializer):
+    time = serializers.DateTimeField(format='%I:%M %p', read_only=True)  # Read-only field, auto-generated
+
     class Meta:
         model = Alert
-        fields = ['id', 'user', 'subject', 'message', 'date_time']
-        read_only_fields = ['user', 'date_time']  # Optionally, you might want to restrict these fields
+        fields = ['id', 'subject', 'message', 'image', 'files', 'links', 'time']  # Include the time field, but it's read-only

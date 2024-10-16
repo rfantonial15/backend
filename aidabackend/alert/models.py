@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 
 class Alert(models.Model):
+    id = models.AutoField(primary_key=True)  # Explicitly define an auto-incrementing ID
     subject = models.CharField(max_length=255)
     message = models.TextField()
     image = models.ImageField(upload_to='alerts/', null=True, blank=True)

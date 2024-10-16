@@ -5,18 +5,19 @@ from .models import Alert
 from .serializers import AlertSerializer
 
 class AlertListCreateView(APIView):
-    # GET method for fetching all alerts
-    def get(self, request, *args, **kwargs):
-        subject = request.query_params.get('subject', None)
-        if subject:
-            alerts = Alert.objects.filter(subject=subject)
-            if alerts.exists():
-                serializer = AlertSerializer(alerts, many=True)
+    # GET method for fetching all alerts or a single alert by id
+    def get(self, request, id=None, *args, **kwargs):
+        if id:  # If id is provided, fetch specific alert
+            try:
+                alert = Alert.objects.get(id=id)
+                serializer = AlertSerializer(alert)
                 return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response({"error": "Alert not found"}, status=status.HTTP_404_NOT_FOUND)
-        alerts = Alert.objects.all()
-        serializer = AlertSerializer(alerts, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            except Alert.DoesNotExist:
+                return Response({"error": "Alert not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:  # If no id, return all alerts
+            alerts = Alert.objects.all()
+            serializer = AlertSerializer(alerts, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
     # POST method for creating a new alert
     def post(self, request, *args, **kwargs):

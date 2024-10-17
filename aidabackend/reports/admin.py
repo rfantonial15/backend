@@ -13,4 +13,3 @@ class ReportAdmin(admin.ModelAdmin):
         'city',
     )
     search_fields = ('victim_name', 'incident_type')  # Updated for search functionality
-

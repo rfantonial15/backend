@@ -15,8 +15,13 @@ class Report(models.Model):
     victim_sex = models.CharField(max_length=10)
     spot_report = models.TextField()
     duty = models.CharField(max_length=255)
-    remarks = models.TextField()
+    
+    # Change remarks to allow only 'Pending' or 'Done'
+    remarks = models.CharField(
+        max_length=10,
+        choices=[('Pending', 'Pending'), ('Done', 'Done')],
+        default='Pending'
+    )
 
     def __str__(self):
         return f"{self.incident_type} - {self.victim_name}"
-

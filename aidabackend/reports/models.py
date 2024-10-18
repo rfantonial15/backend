@@ -1,12 +1,12 @@
 from django.db import models
-from django.utils import timezone  # Make sure this line is included
+from django.utils import timezone
 
 class Report(models.Model):
-    image_url = models.URLField(default='')  # Default can be an empty string
+    image_url = models.URLField(default='')
     incident_type = models.CharField(max_length=255)
-    latitude = models.FloatField(default=0.0)  # Set a default value
+    latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0) 
-    date_time = models.DateTimeField(default=timezone.now)  # Use timezone.now for default
+    date_time = models.DateTimeField(default=timezone.now) 
     landmark = models.CharField(max_length=255)
     barangay = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
@@ -16,7 +16,6 @@ class Report(models.Model):
     spot_report = models.TextField()
     duty = models.CharField(max_length=255)
     
-    # Change remarks to allow only 'Pending' or 'Done'
     remarks = models.CharField(
         max_length=10,
         choices=[('Pending', 'Pending'), ('Done', 'Done')],

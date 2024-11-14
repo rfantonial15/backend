@@ -85,7 +85,6 @@ class LoginView(TokenObtainPairView):
         password = request.data.get('password')
 
         try:
-            # Fetch the user by email (case-insensitive)
             user = User.objects.get(email__iexact=email)
 
             if not user.is_verified:
@@ -106,7 +105,8 @@ class LoginView(TokenObtainPairView):
                     'message': 'Login successful',
                     'access': str(refresh.access_token),
                     'refresh': str(refresh),
-                    'user': user_data, 
+                    'user': user_data,
+                    'isadmin': user.isadmin,  # Include this field for frontend to use
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)

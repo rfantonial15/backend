@@ -91,7 +91,7 @@ EMAIL_HOST_USER = 'aida.response@gmail.com'
 EMAIL_HOST_PASSWORD = 'kcka vkjw fkxh xezk'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-FRONTEND_URL = 'http://localhost:5173'
+FRONTEND_URL = 'http://localhost:5173/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

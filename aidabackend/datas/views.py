@@ -115,6 +115,7 @@ class LoginView(TokenObtainPairView):
             return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
 class UserListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
     queryset = User.objects.filter(isadmin=False)  
     serializer_class = UserSerializer
 

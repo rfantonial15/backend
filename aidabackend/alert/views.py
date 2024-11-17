@@ -3,8 +3,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Alert
 from .serializers import AlertSerializer
+from rest_framework.permissions import AllowAny
 
 class AlertListCreateView(APIView):
+    permission_classes = [AllowAny]
     # GET method for fetching all alerts or a single alert by id
     def get(self, request, id=None, *args, **kwargs):
         if id:  # If id is provided, fetch specific alert

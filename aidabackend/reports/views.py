@@ -75,7 +75,7 @@ def detect_incident(request):
 
         try:
             # Perform incident detection
-            result = CLIENT.infer(media_path, model_id="incident_classification/12")
+            result = CLIENT.infer(media_path, model_id="incident_classification/13")
             predictions = result.get("predictions", [])
             detected_class = predictions[0]["class"] if predictions else None
 

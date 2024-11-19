@@ -195,12 +195,10 @@ class ResetPasswordView(APIView):
 class ProfileUpdateView(APIView):
     permission_classes = [AllowAny]  # Allow unauthenticated users to update data
 
-    def post(self, request, *args, **kwargs):
-        user = request.user  # This will be None if the user is unauthenticated
+    def put(self, request, *args, **kwargs):
+        user = request.user 
         data = request.data
 
-        # If user is unauthenticated, you may want to allow them to send the data
-        # but that can expose security risks, so be cautious.
         if not user:
             return Response({"error": "You must be logged in to update your profile"}, status=status.HTTP_401_UNAUTHORIZED)
 

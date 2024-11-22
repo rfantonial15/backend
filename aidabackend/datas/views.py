@@ -1,20 +1,26 @@
-from rest_framework import generics, status
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth import authenticate,login
+
 from .models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, LoginSerializer, RegisterSerializer
+
+from rest_framework import generics, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
+
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
@@ -24,22 +30,10 @@ class RegisterView(generics.CreateAPIView):
         if 'password' in data:
             data['password'] = make_password(data['password'])
         
-        serializer = self.get_serializer(data=data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            # Save the user without calling `serializer.save()` to handle password manually
-            user = User(
-                firstname=data['firstname'],
-                lastname=data['lastname'],
-                email=data['email'],
-                username=data['username'],
-                password=data['password'],  # Hashed password
-                phone=data.get('phone', ''),
-                barangay=data.get('barangay', ''),
-                isadmin=False  # Set any other default values here
-            )
-            user.save()
-
-            # Generate verification code and send email
+            self.perform_create(serializer)
+            user = User.objects.get(email=serializer.data["email"])
             user.generate_verification_code()
             send_mail(
                 'Verify Your Email',
@@ -79,18 +73,26 @@ class VerifyEmailView(APIView):
             # Return error response if the email or code is incorrect
             return Response({'error': 'Invalid email or verification code.'}, status=status.HTTP_400_BAD_REQUEST)
         
-class LoginView(TokenObtainPairView):
+class LoginView(APIView):
+    serializer_class = LoginSerializer
+    permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
+
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
         password = request.data.get('password')
-
+        serializer = LoginSerializer(data=request.data)
         try:
             user = User.objects.get(email__iexact=email)
-
+            print(user)
             if not user.is_verified:
                 return Response({'error': 'Email is not verified.'}, status=status.HTTP_403_FORBIDDEN)
 
-            if check_password(password, user.password):
+            if serializer.is_valid() and check_password(password, user.password):
+                user_login = authenticate(request, email=serializer.data["email"], password=password)
+                print(user_login)
+                login_response = login(request, user_login)       
+                print(login_response)
                 refresh = RefreshToken.for_user(user)
                 user_data = {
                     'firstname': user.firstname,
@@ -100,6 +102,7 @@ class LoginView(TokenObtainPairView):
                     'phone': user.phone,
                     'barangay': user.barangay,
                     'isadmin': user.isadmin,
+                    "id":user.id
                 }
                 return Response({
                     'message': 'Login successful',
@@ -112,6 +115,7 @@ class LoginView(TokenObtainPairView):
                 return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
         except User.DoesNotExist:
+            print(serializer.errors)
             return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
 class UserListView(generics.ListAPIView):
@@ -193,14 +197,17 @@ class ResetPasswordView(APIView):
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         
 class ProfileUpdateView(APIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
     permission_classes = [AllowAny]  # Allow unauthenticated users to update data
-
-    def put(self, request, *args, **kwargs):
+    authentication_classes = [JWTAuthentication]
+    
+    def put(self, request, id, *args, **kwargs):
+        user_edit = User.objects.get(id=id)
+        print(user_edit)
         user = request.user 
         data = request.data
-
-        if not user:
-            return Response({"error": "You must be logged in to update your profile"}, status=status.HTTP_401_UNAUTHORIZED)
+        print(data)
 
         updatable_fields = ['firstname', 'lastname', 'username', 'phone', 'barangay']
         for field in updatable_fields:
@@ -213,3 +220,4 @@ class ProfileUpdateView(APIView):
             {"message": "Profile updated successfully", "user": UserSerializer(user).data},
             status=status.HTTP_200_OK
         )
+

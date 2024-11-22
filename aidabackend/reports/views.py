@@ -11,11 +11,13 @@ import tempfile
 import uuid
 from django.conf import settings
 from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
     permission_classes = [AllowAny]  # Allow anyone to create reports
+    authentication_classes = [JWTAuthentication]
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()

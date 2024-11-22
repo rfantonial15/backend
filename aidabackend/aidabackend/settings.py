@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-t)_xfp@&7o1!+vhfzv8mv+fzjaefi*8_uj_mt9$@b)k6%h9%i0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.0.2.2', '127.0.0.1', '192.168.0.14', '172.20.10.6', '192.168.18.60']
+ALLOWED_HOSTS = ['10.0.2.2', '192.168.0.14', '172.20.10.6', '192.168.18.60']
 
 
 # Application definition
@@ -57,7 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware', 
+    'corsheaders.middleware.CorsMiddleware',    
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -68,12 +68,12 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-COR_ALLOW_HEADERS = [
+CORS_ALLOW_HEADERS = [
   'access-control-allow-origin',
   'content-type'
 ]
 
-COR_ALLOW_METHODS = [
+CORS_ALLOW_METHODS = [
   'DELETE',
   'GET',
   'OPTIONS',
@@ -94,6 +94,7 @@ FRONTEND_URL = 'http://localhost:5173/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        "rest_framework.authentication.SessionAuthentication",
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -142,6 +143,7 @@ DATABASES = {
     }
 }
 
+AUTH_USER_MODEL = "datas.User"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-t)_xfp@&7o1!+vhfzv8mv+fzjaefi*8_uj_mt9$@b)k6%h9%i0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.0.2.2', '192.168.0.14', '172.20.10.6', '192.168.18.60']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -179,13 +179,23 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+# AWS S3 Configuration
+AWS_ACCESS_KEY_ID = 'AKIA2ZIONDAYGELBG7TS'
+AWS_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = 'aida-report001'
+AWS_S3_REGION_NAME = 'ap-southeast-2'
+AWS_S3_SIGNATURE_NAME = 's3v4'
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+AWS_S3_VERIFY = True
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+# Media Files (uploaded by users)
+MEDIA_URL = 'https://aida-report001.s3.ap-southeast-2.amazonaws.com/media/'
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
+# Static Files (CSS, JS, etc.)
+STATIC_URL = 'https://aida-report001.s3.ap-southeast-2.amazonaws.com/static/'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+
+# Default Primary Key Field Type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-

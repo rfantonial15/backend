@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'reports',
     'datas',
     'alert',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -194,8 +195,13 @@ MEDIA_URL = 'https://aida-report001.s3.ap-southeast-2.amazonaws.com/media/'
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 # Static Files (CSS, JS, etc.)
-STATIC_URL = 'https://aida-report001.s3.ap-southeast-2.amazonaws.com/static/'
+STATIC_URL = 'static/'
 STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
 
 # Default Primary Key Field Type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',  # Cache files for 1 day
+}

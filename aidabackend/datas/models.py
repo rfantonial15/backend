@@ -50,6 +50,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)  # Verification status
     is_staff=models.BooleanField(default=False)
     is_superuser=models.BooleanField(default=False)
+    is_frozen = models.BooleanField(default=False)
     verification_code = models.CharField(max_length=5, blank=True, null=True)  # 5-digit code
 
     objects = UserManager()

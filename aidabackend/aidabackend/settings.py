@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'reports',
     'datas',
     'alert',
+    'storages'
 ]
 
 MIDDLEWARE = [
@@ -68,9 +69,10 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
-  'access-control-allow-origin',
-  'content-type'
+    'Authorization',
+    'Content-Type',
 ]
 
 CORS_ALLOW_METHODS = [
@@ -188,14 +190,20 @@ AWS_S3_SIGNATURE_NAME = 's3v4'
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
 AWS_S3_VERIFY = True
+AWS_QUERYSTRING_AUTH = False
 
 # Media Files (uploaded by users)
-MEDIA_URL = 'https://aida-report001.s3.ap-southeast-2.amazonaws.com/media/'
+MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/media/'
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 # Static Files (CSS, JS, etc.)
-STATIC_URL = 'https://aida-report001.s3.ap-southeast-2.amazonaws.com/static/'
+STATIC_URL = 'static/'
 STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
 
 # Default Primary Key Field Type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',  # Cache files for 1 day
+}

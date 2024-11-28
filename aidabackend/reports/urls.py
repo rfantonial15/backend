@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ReportViewSet, detect_incident
+from .views import ReportViewSet, detect_incident, upload_image
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -11,6 +11,7 @@ router.register(r'reports', ReportViewSet, basename='report')  # Adding basename
 urlpatterns = [
     path('', include(router.urls)),  # Includes all routes for ReportViewSet
     path('detect-incident/', detect_incident, name='detect_incident'),  # Direct path for detect-incident
+    path('upload-image/', upload_image, name='upload_image'),
 ]
 
 # Serve media files in development

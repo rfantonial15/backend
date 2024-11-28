@@ -16,7 +16,7 @@ class Report(models.Model):
     victim_age = models.IntegerField()
     victim_sex = models.CharField(max_length=10)
     spot_report = models.TextField()
-    duty = models.CharField(max_length=255)
+    duty = models.CharField(max_length=255, blank=True, default="")
     remarks = models.CharField(
         max_length=10,
         choices=[('Pending', 'Pending'), ('Done', 'Done')],

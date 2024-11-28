@@ -1,3 +1,4 @@
+import boto3
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,11 +13,12 @@ import uuid
 from django.conf import settings
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from botocore.exceptions import NoCredentialsError
 
 class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
-    permission_classes = [AllowAny]  # Allow anyone to create reports
+    permission_classes = [AllowAny]  # Allow anyone to create and update reports
     authentication_classes = [JWTAuthentication]
 
     def create(self, request, *args, **kwargs):
@@ -50,14 +52,42 @@ class ReportViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
+        print(f"Incoming data: {request.data}")
+
+        if not request.data:
+            return Response({"error": "No data received"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Handle specific update for 'remarks'
         if 'remarks' in request.data:
             instance.remarks = request.data['remarks']
-            instance.save(update_fields=['remarks'])  # Only update the 'remarks' field
+            instance.save(update_fields=['remarks'])
+            print(f"Updated remarks to: {instance.remarks}")
             serializer = self.get_serializer(instance)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        
-        return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Handle updates for other fields dynamically
+        for field, value in request.data.items():
+            print(f"Processing field: {field} with value: {value}")
+            if hasattr(instance, field):
+                setattr(instance, field, value)
+                print(f"Updated {field} to {value}")
+
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    def update(self, request, *args, **kwargs):
+        # This handles full updates (all fields must be sent in the request)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        instance.save() 
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
 CLIENT = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
     api_key="lvRVpI8zrOHMnk87ZLAC"
@@ -66,30 +96,128 @@ CLIENT = InferenceHTTPClient(
 @csrf_exempt
 def detect_incident(request):
     if request.method == "POST" and request.FILES.get("image"):
-        # Generate a unique filename to avoid conflicts
-        filename = f"{uuid.uuid4()}.jpg"
-        media_path = os.path.join(settings.MEDIA_ROOT, 'incident_images', filename)
-        os.makedirs(os.path.dirname(media_path), exist_ok=True)
-
-        # Save the uploaded image to the media directory
-        with open(media_path, 'wb') as media_file:
-            media_file.write(request.FILES["image"].read())
-
         try:
-            # Perform incident detection
-            result = CLIENT.infer(media_path, model_id="incident_classification/13")
-            predictions = result.get("predictions", [])
-            detected_class = predictions[0]["class"] if predictions else None
+            print("Starting detect_incident function...")
 
-            # Return detection information and the media URL
-            image_url = f"{settings.MEDIA_URL}incident_images/{filename}"
+            # Retrieve the uploaded file
+            uploaded_file = request.FILES["image"]
+            print("File received:", uploaded_file.name)
+
+            # Perform incident detection directly on the file
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                for chunk in uploaded_file.chunks():
+                    temp_file.write(chunk)
+                temp_file_path = temp_file.name
+
+            print("Temporary file path:", temp_file_path)
+
+            # Perform incident detection using the local file path
+            result = CLIENT.infer(temp_file_path, model_id="incident_classification/13")
+            print("Inference result received:", result)
+
+            # Extract predictions
+            predictions = result.get("predictions", [])
+            detected_class = predictions[0]["class"] if predictions else "Unknown"
+            print("Detected class:", detected_class)
+
+            # If no valid incident is detected, do not upload the image
+            if detected_class == "Unknown":
+                print("No valid incident detected. Skipping S3 upload.")
+                return JsonResponse({
+                    "incident_type": "Unknown",
+                    "captured_image": None  # No image URL since not uploaded
+                }, safe=False)
+
+            # Generate a unique filename for the valid incident
+            unique_filename = f"incident_images/{uuid.uuid4()}.jpg"
+            print("Generated unique filename:", unique_filename)
+
+            # Upload file to S3
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME
+            )
+            bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+
+            with open(temp_file_path, "rb") as file_obj:
+                s3_client.upload_fileobj(
+                    file_obj,
+                    bucket_name,
+                    unique_filename,
+                    ExtraArgs={'ContentType': uploaded_file.content_type}
+                )
+            print("File uploaded to S3")
+
+            # Generate the public URL for the uploaded file
+            image_url = f"https://{bucket_name}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{unique_filename}"
+            print("S3 URL of uploaded file:", image_url)
+
+            # Return the response
             return JsonResponse({
                 "incident_type": detected_class,
-                "captured_image": image_url  # Return the URL to the image
+                "captured_image": image_url  # Return the public S3 URL
             }, safe=False)
+
+        except NoCredentialsError as e:
+            print("S3 credentials error:", e)
+            return JsonResponse({"error": "S3 credentials not found. Check your AWS settings."}, status=500)
         except Exception as e:
-            os.remove(media_path)
-            print(f"Error during inference: {e}")
+            print("Error occurred:", str(e))
             return JsonResponse({"error": str(e)}, status=500)
-    else:
-        return JsonResponse({"error": "Invalid request"}, status=400)
+        finally:
+            if temp_file_path:
+                os.remove(temp_file_path)  # Clean up the temporary file
+
+    print("Invalid request received.")
+    return JsonResponse({"error": "Invalid request. Please provide an image."}, status=400)
+
+
+@csrf_exempt
+def upload_image(request):
+    if request.method == "POST" and request.FILES.get("image"):
+        try:
+            print("Starting upload_image function...")
+
+            # Retrieve the uploaded file
+            uploaded_file = request.FILES["image"]
+            print("File received:", uploaded_file.name)
+
+            # Generate a unique filename
+            unique_filename = f"incident_images/{uuid.uuid4()}.jpg"
+            print("Generated unique filename:", unique_filename)
+
+            # Upload file to S3
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME
+            )
+            bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+
+            s3_client.upload_fileobj(
+                uploaded_file,
+                bucket_name,
+                unique_filename,
+                ExtraArgs={'ContentType': uploaded_file.content_type}
+            )
+            print("File uploaded to S3")
+
+            # Generate the public URL for the uploaded file
+            image_url = f"https://{bucket_name}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{unique_filename}"
+            print("S3 URL of uploaded file:", image_url)
+
+            # Return the S3 URL of the uploaded image
+            return JsonResponse({"image_url": image_url}, status=200)
+
+        except NoCredentialsError as e:
+            print("S3 credentials error:", e)
+            return JsonResponse({"error": "S3 credentials not found. Check your AWS settings."}, status=500)
+        except Exception as e:
+            print("Error occurred:", str(e))
+            return JsonResponse({"error": str(e)}, status=500)
+
+    print("Invalid request received.")
+    return JsonResponse({"error": "Invalid request. Please provide an image."}, status=400)

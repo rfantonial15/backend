@@ -10,18 +10,19 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
+from rest_framework.permissions import BasePermission
 
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -52,6 +53,7 @@ class RegisterView(generics.CreateAPIView):
 
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
 
     def post(self, request):
         email = request.data.get('email')
@@ -84,6 +86,9 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         try:
             user = User.objects.get(email__iexact=email)
+            if user.is_frozen:  # Check if the user is frozen
+                return Response({'error': 'Your account is frozen. Please contact the admin.'}, status=status.HTTP_403_FORBIDDEN)
+            
             print(user)
             if not user.is_verified:
                 return Response({'error': 'Email is not verified.'}, status=status.HTTP_403_FORBIDDEN)
@@ -102,6 +107,8 @@ class LoginView(APIView):
                     'phone': user.phone,
                     'barangay': user.barangay,
                     'isadmin': user.isadmin,
+                    'isstaff': user.is_staff,
+                    'issuperuser': user.is_superuser,
                     "id":user.id
                 }
                 return Response({
@@ -110,6 +117,8 @@ class LoginView(APIView):
                     'refresh': str(refresh),
                     'user': user_data,
                     'isadmin': user.isadmin,  # Include this field for frontend to use
+                    'isstaff': user.is_staff,
+                    'issuperuser': user.is_superuser,
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
@@ -123,8 +132,21 @@ class UserListView(generics.ListAPIView):
     queryset = User.objects.filter(isadmin=False)  
     serializer_class = UserSerializer
 
+class UserRoleView(APIView):
+    permission_classes = [AllowAny]  # Require authentication
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        return Response({
+            'isadmin': user.isadmin,
+            'issuperuser': user.is_superuser,
+            'isstaff': user.is_staff,
+        }, status=status.HTTP_200_OK)
+
+
 class ResendVerificationView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
 
     def post(self, request):
         email = request.data.get('email')
@@ -150,6 +172,7 @@ class ResendVerificationView(APIView):
 
 class RequestPasswordResetView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
 
     def post(self, request):
         email = request.data.get('email')
@@ -168,6 +191,7 @@ class RequestPasswordResetView(APIView):
 
 class VerifyResetCodeView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
     
     def post(self, request):
         email = request.data.get('email')
@@ -183,6 +207,7 @@ class VerifyResetCodeView(APIView):
 
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
 
     def post(self, request):
         email = request.data.get('email')
@@ -220,4 +245,30 @@ class ProfileUpdateView(APIView):
             {"message": "Profile updated successfully", "user": UserSerializer(user).data},
             status=status.HTTP_200_OK
         )
+
+class FreezeUserView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request, id):
+        try:
+            user = User.objects.get(id=id)
+            user.is_frozen = True
+            user.save(update_fields=["is_frozen"])
+            return Response({'message': 'User account has been frozen.'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+class UnfreezeUserView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request, id):
+        try:
+            user = User.objects.get(id=id)
+            user.is_frozen = False
+            user.save(update_fields=["is_frozen"])
+            return Response({'message': 'User account has been unfrozen.'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 

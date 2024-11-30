@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'reports',
     'datas',
     'alert',
-    'storages'
+    'storages',
+    'channels', 
 ]
 
 MIDDLEWARE = [
@@ -132,8 +133,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'aidabackend.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -207,3 +206,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': 'max-age=86400',  # Cache files for 1 day
 }
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+ASGI_APPLICATION = 'aidabackend.asgi.application'

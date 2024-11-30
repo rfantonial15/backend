@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils import timezone
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 class Report(models.Model):
     id = models.AutoField(primary_key=True)
@@ -25,3 +27,17 @@ class Report(models.Model):
 
     def __str__(self):
         return f"{self.incident_type} - {self.victim_name}"
+
+    def save(self, *args, **kwargs):
+        # Save the report
+        super().save(*args, **kwargs)
+
+        # Trigger WebSocket notification for new report
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "reports",  # The group name for WebSocket connections
+            {
+                "type": "send_notification",
+                "report": f"New report: {self.incident_type} - {self.victim_name}",
+            },
+        )

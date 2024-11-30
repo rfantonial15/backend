@@ -14,6 +14,8 @@ from django.conf import settings
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from botocore.exceptions import NoCredentialsError
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all()
@@ -45,6 +47,29 @@ class ReportViewSet(viewsets.ModelViewSet):
 
         # Save the report to the database
         report.save()
+
+        # Broadcast the new report to WebSocket clients
+        try:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "reports",  # The WebSocket group name
+                {
+                    "type": "send_notification",
+                    "report": {
+                        "reporter_name": report.reporter_name,
+                        "incident_type": report.incident_type,
+                        "image_url": report.image_url,
+                        "barangay": report.barangay,
+                        "city": report.city,
+                        "remarks": report.remarks,
+                        "latitude": report.latitude,
+                        "longitude": report.longitude,
+                        "date_time": str(report.date_time),
+                    },
+                }
+            )
+        except Exception as e:
+            print(f"Error sending WebSocket notification: {e}")
 
         # Serialize the newly created report to return it in the response
         serializer = self.get_serializer(report)

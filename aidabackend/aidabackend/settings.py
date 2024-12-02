@@ -94,7 +94,7 @@ EMAIL_HOST_USER = 'aida.response@gmail.com'
 EMAIL_HOST_PASSWORD = 'kcka vkjw fkxh xezk'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-FRONTEND_URL = 'https://aida-ph.com/'
+FRONTEND_URL = 'https://aida-ph.com'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

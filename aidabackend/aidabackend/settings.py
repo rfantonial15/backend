@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-t)_xfp@&7o1!+vhfzv8mv+fzjaefi*8_uj_mt9$@b)k6%h9%i0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -66,6 +66,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://192.168.0.16:8081",
+    "https://aida-ph.com/"
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -93,7 +94,7 @@ EMAIL_HOST_USER = 'aida.response@gmail.com'
 EMAIL_HOST_PASSWORD = 'kcka vkjw fkxh xezk'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-FRONTEND_URL = 'http://localhost:5173/'
+FRONTEND_URL = 'https://aida-ph.com/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

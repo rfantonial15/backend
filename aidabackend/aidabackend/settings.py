@@ -66,7 +66,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://192.168.0.16:8081",
-    "https://aida-ph.com/"
+    "https://aida-ph.com"
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True

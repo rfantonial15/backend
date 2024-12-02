@@ -29,15 +29,19 @@ class Report(models.Model):
         return f"{self.incident_type} - {self.victim_name}"
 
     def save(self, *args, **kwargs):
+        # Check if this is a new instance
+        is_new = self.pk is None
+
         # Save the report
         super().save(*args, **kwargs)
 
-        # Trigger WebSocket notification for new report
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            "reports",  # The group name for WebSocket connections
-            {
-                "type": "send_notification",
-                "report": f"New report: {self.incident_type} - {self.victim_name}",
-            },
-        )
+        # Trigger WebSocket notification only for new reports
+        if is_new:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                "reports",  # The group name for WebSocket connections
+                {
+                    "type": "send_notification",
+                    "report": f"New report: {self.incident_type} - {self.victim_name}",
+                },
+            )

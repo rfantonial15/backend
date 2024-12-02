@@ -25,8 +25,6 @@ class ReportViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
-
-        # Extract data manually from the request to create a Report instance
         report = Report(
             reporter_name=data.get('reporter_name', 'Unknown Reporter'),
             image_url=data.get('image_url', ''),
@@ -44,15 +42,13 @@ class ReportViewSet(viewsets.ModelViewSet):
             duty=data.get('duty', ''),
             remarks=data.get('remarks', 'Pending')
         )
-
-        # Save the report to the database
         report.save()
 
-        # Broadcast the new report to WebSocket clients
+        # Only send notifications during report creation
         try:
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
-                "reports",  # The WebSocket group name
+                "reports",
                 {
                     "type": "send_notification",
                     "report": {
@@ -66,38 +62,23 @@ class ReportViewSet(viewsets.ModelViewSet):
                         "longitude": report.longitude,
                         "date_time": str(report.date_time),
                     },
-                }
+                },
             )
         except Exception as e:
             print(f"Error sending WebSocket notification: {e}")
 
-        # Serialize the newly created report to return it in the response
         serializer = self.get_serializer(report)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-        print(f"Incoming data: {request.data}")
 
-        if not request.data:
-            return Response({"error": "No data received"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Handle specific update for 'remarks'
-        if 'remarks' in request.data:
-            instance.remarks = request.data['remarks']
-            instance.save(update_fields=['remarks'])
-            print(f"Updated remarks to: {instance.remarks}")
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        # Handle updates for other fields dynamically
+        # Prevent notifications during partial updates
         for field, value in request.data.items():
-            print(f"Processing field: {field} with value: {value}")
             if hasattr(instance, field):
                 setattr(instance, field, value)
-                print(f"Updated {field} to {value}")
-
         instance.save()
+
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
